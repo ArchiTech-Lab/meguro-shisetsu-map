@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>目黒区 公共施設マップ</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+#side button{font-size:11px;padding:2px 6px;margin:2px 2px 2px 0;border:1px solid var(--bd);background:var(--bg);color:var(--fg);border-radius:4px;cursor:pointer}.rdi{padding:2px 4px;border-radius:4px;cursor:pointer}.rdi.on{background:rgba(33,140,116,.18)}.rdi .sw{border-radius:2px}
+:root{--bg:#fff;--fg:#1d2b2a;--mut:#667;--pn:#fbfdfc;--bd:#cfdcd8;--ac:#218c74}
+@media(prefers-color-scheme:dark){:root{--bg:#14201e;--fg:#e6efed;--mut:#9ab;--pn:#1b2a28;--bd:#34504b}}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.5 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+#map{position:absolute;inset:0 0 0 310px}
+#side{position:absolute;inset:0 auto 0 0;width:310px;overflow:auto;background:var(--pn);border-right:1px solid var(--bd);padding:10px 12px;box-sizing:border-box}
+h1{font-size:15px;margin:0 0 4px}h2{font-size:12px;margin:12px 0 4px;color:var(--ac);border-bottom:1px solid var(--bd)}
+label{display:block;cursor:pointer}small,.m{color:var(--mut);font-size:11px}
+select,input[type=text]{width:100%;box-sizing:border-box;margin:2px 0;background:var(--bg);color:var(--fg);border:1px solid var(--bd);padding:2px}
+.sw{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.bar{display:inline-block;width:18px;height:5px;margin-right:4px;vertical-align:2px}
+#info{margin-top:8px;padding:6px;border:1px solid var(--bd);background:var(--bg);min-height:36px}
+.lab{background:none;border:none;box-shadow:none;font-size:11px;font-weight:600;color:#123;text-shadow:0 0 3px #fff,0 0 3px #fff}
+.cl{font-size:10px;color:#556;text-shadow:0 0 2px #fff;white-space:nowrap}
+@media(max-width:700px){#side{width:100%;height:42%;inset:auto 0 0 0;border-right:0;border-top:1px solid var(--bd)}#map{inset:0 0 42% 0}}
+ul{margin:2px 0;padding-left:16px}
+#popctl select{margin:1px 0}#poplg div{display:flex;align-items:center;font-size:11px}#poplg .sw{border-radius:2px;width:16px;height:11px}
+#dtwrap{position:absolute;z-index:1000;top:10px;right:10px;width:min(760px,calc(100vw - 330px));max-height:calc(100% - 20px);overflow:auto;background:var(--pn);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+#dtwrap table{border-collapse:collapse;width:100%;font-size:11px;margin:4px 0}#dtwrap th,#dtwrap td{border:1px solid var(--bd);padding:1px 4px;text-align:right;white-space:nowrap}#dtwrap th{background:var(--bg)}#dtwrap td:first-child,#dtwrap th:first-child{text-align:left}
+#dthead{display:flex;justify-content:space-between;gap:8px}
+#hist,#shist{height:46px;display:flex;align-items:flex-end;gap:0;margin-top:2px}#hist i,#shist i{display:block;flex:1;min-width:0}
+#rgw,#sgw{position:relative;height:30px;margin:2px 0 14px}
+#rgw input[type=range],#sgw input[type=range]{position:absolute;left:0;top:10px;width:100%;margin:0;pointer-events:none;-webkit-appearance:none;appearance:none;background:none;height:18px}
+#rgw input[type=range]::-webkit-slider-runnable-track,#sgw input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--bd);border-radius:2px}
+#rgw input[type=range]::-webkit-slider-thumb,#sgw input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:16px;height:16px;border-radius:50%;background:var(--ac);border:2px solid #fff;margin-top:-6px;cursor:pointer}
+#rgw input[type=range]::-moz-range-track,#sgw input[type=range]::-moz-range-track{height:4px;background:var(--bd)}
+#rgw input[type=range]::-moz-range-thumb,#sgw input[type=range]::-moz-range-thumb{pointer-events:auto;width:14px;height:14px;border-radius:50%;background:var(--ac);border:2px solid #fff;cursor:pointer}
+.rgl{position:absolute;top:0;height:30px;border-left:2px dashed currentColor;font-size:10px;white-space:nowrap}.rgl span{position:absolute;top:-1px;left:3px;background:var(--pn);padding:0 2px}#rgl1 span{right:3px;left:auto}#rgl2 span{top:auto;bottom:-13px}
+#rgbtn button,#sbtn button{font-size:11px;padding:2px 6px;margin:2px 2px 2px 0;border:1px solid var(--bd);background:var(--bg);color:var(--fg);border-radius:4px;cursor:pointer}
+</style></head><body>
+<div id="side">
+<h1>目黒区 公共施設マップ</h1>
+<small>意見書スタディ用。出典は下部。座標のない施設は一覧のみ。</small>
+
+<h2>背景の地図（裏）</h2>
+<select id="base"></select>
+<label>透明度 <input id="bop" type="range" min="0.1" max="1" step="0.05" value="1" style="width:55%"></label>
+<select id="ov"></select>
+<label>重ねる地図の透明度 <input id="oop" type="range" min="0.1" max="1" step="0.05" value="0.6" style="width:35%"></label>
+<input id="turl" type="text" placeholder="任意のタイルURL（…/{z}/{x}/{y}.png）→ Enter">
+<label>GeoJSONを重ねる（ローカルファイル） <input id="gj" type="file" accept=".geojson,.json"></label>
+
+<h2>区域・交通</h2>
+<label><input type="checkbox" id="l_cho" checked>丁目の区域（クリックで名称）</label>
+<label><input type="checkbox" id="l_lab">丁目名ラベル</label>
+<label><input type="checkbox" id="l_maj" checked><span class="bar" style="background:#d9822b"></span>幹線道路（都道・国道・主要地方道）</label>
+<label><input type="checkbox" id="l_min"><span class="bar" style="background:#888"></span>細街路（生活道路）</label>
+<label><input type="checkbox" id="l_rail" checked><span class="bar" style="background:#444"></span>鉄道路線</label>
+<label><input type="checkbox" id="l_st" checked>駅</label>
+<label><input type="checkbox" id="l_w5" checked><span class="sw" style="background:#1b9e77;opacity:.42;border-radius:2px"></span>駅から徒歩5分（半径400m）</label>
+<label><input type="checkbox" id="l_w10" checked><span class="sw" style="background:#1b9e77;opacity:.16;border-radius:2px"></span>駅から徒歩10分（半径800m）</label>
+<small>駅圏＝駅からの直線距離・80m/分の円（道路の回り道は考えない）。駅の近くほど濃く、周縁ほど薄い。駅圏が重なっても濃さは変わらない。区界から900m以内の区外の駅も含む。</small>
+
+<h2>最寄り駅の領域（ボロノイ分割）</h2>
+<label><input type="checkbox" id="l_vor">最寄り駅の領域で塗り分け（直線距離）</label>
+<div><button type="button" id="b_vt" style="font-size:11px;padding:2px 6px;margin:3px 0">駅ごとの領域の表を開く</button></div>
+<small id="vornote"></small>
+
+<h2>人口（中長期・町丁目別）</h2>
+<label><input type="checkbox" id="l_pop">人口で塗り分け（丁目の区域の上）</label>
+<div id="popctl"><select id="p_y"><option value="2020">2020年（国勢調査・実績）</option><option value="2050">2050年（推計）</option><option value="2100">2100年（シナリオ）</option></select>
+<select id="p_s"><option value="low">低位＝社人研（令和5年推計）</option><option value="mid" selected>中位＝区推計・国調基本</option><option value="high">高位＝区推計・国調高位</option></select>
+<select id="p_m"><option value="n">人数（人/町丁目）</option><option value="dens">密度（人/ha）</option><option value="ch">2020年からの増減率（%）</option></select>
+<select id="p_a"><option value="total">総数</option><option value="u15">0〜14歳</option><option value="a1564">15〜64歳</option><option value="a65">65歳以上</option><option value="a75">75歳以上</option></select></div>
+<div id="poplg"></div>
+<div><button type="button" id="b_dt" style="font-size:11px;padding:2px 6px;margin:3px 0">学区別の年少人口の表を開く</button></div>
+<small id="popnote"><b>2100年は予測ではなくシナリオ</b>（全国の2100/2050変化率を共通に当てた機械的な延長）。<b>町丁目ごとの違い（再開発・転出入）は反映されない</b>：全町丁目に同じ年齢層別の伸び率を当てている。2050年＝低位は社人研、中位・高位は区の公式推計に合わせた。国全体の出生高位・低位の推計表は取得できなかったため、出生仮定によるシナリオ差は含まない。出典＝国勢調査2020（e-Stat小地域）・社人研 令和5年推計（地域別・全国）・目黒区「人口・世帯数の予測」（令和6年3月）。詳細＝data/interim/population_check.md</small>
+
+<h2>学校</h2>
+<label><input type="checkbox" id="l_es" checked><span class="sw" style="background:#2166ac"></span>小学校</label>
+<label><input type="checkbox" id="l_js" checked><span class="sw" style="background:#b2182b"></span>中学校（中等教育学校を含む）</label>
+<label><input type="checkbox" id="l_pri" checked>私立・都立も表示（外す＝区立のみ）</label>
+<label><input type="checkbox" id="l_d_es"><span class="bar" style="background:#2166ac"></span>小学校区（区立22校）</label>
+<label><input type="checkbox" id="l_d_js"><span class="bar" style="background:#b2182b"></span>中学校区（令和3年度の9区域・現行7校）</label>
+<small>学区＝国土数値情報 A27-21・A32-21（令和3年度時点）。<b>中学校は令和7年4月に統合</b>：第七中＋第九中→目黒南中、第八中＋第十一中→目黒西中（旧2校区の合算。目黒南は推測）。新校舎への移転は令和9年度中の予定。小学校の変更は見つからなかった（未確認）。詳細＝data/interim/school_districts_check.md</small>
+
+<h2>区の所有・管理施設（施設データ集R6）</h2>
+<label><input type="checkbox" id="l_fac" checked>施設（ピン・マウスを重ねると詳細）</label>
+<div class="m" style="margin-top:6px">築年度の範囲（つまみ2つ）</div>
+<div id="hist"></div>
+<div id="rgw"><div id="rgl1" class="rgl" style="color:#9b1c1c"><span>旧耐震｜新耐震</span></div><div id="rgl2" class="rgl" style="color:#b86a10"><span>2037年に47年</span></div>
+<input type="range" id="rg_lo" min="1929" max="2022" step="1" value="1929"><input type="range" id="rg_hi" min="1929" max="2022" step="1" value="2022"></div>
+<div id="rgtxt" style="margin:2px 0"></div>
+<div id="rgbtn"><button type="button" id="b_old">旧耐震だけ</button> <button type="button" id="b_r37">2037年までに（〜1990年度）</button> <button type="button" id="b_all">すべて</button></div>
+<small id="rgnote">「2037年までに」は旧耐震を含む。1981年度の旧耐震と判定した3棟は1980年度として扱う。</small>
+<div class="m" style="margin-top:10px">敷地面積の範囲（つまみ2つ・対数目盛）</div>
+<div id="shist"></div>
+<div id="sgw"><div class="rgl" id="sgl1" style="color:#555"><span>100㎡</span></div><div class="rgl" id="sgl2" style="color:#555"><span>1,000㎡</span></div>
+<input type="range" id="sg_lo" min="100" max="470" step="1" value="100"><input type="range" id="sg_hi" min="100" max="470" step="1" value="470"></div>
+<div id="sgtxt" style="margin:2px 0"></div>
+<div id="sbtn"><button type="button" id="s_a">100㎡未満</button> <button type="button" id="s_b">100〜1,000㎡</button> <button type="button" id="s_c">1,000㎡以上</button> <button type="button" id="s_all">すべて</button></div>
+<small>敷地面積＝施設データ集R6の「面積」。築年度の範囲と同時に効く（両方に入る棟だけ表示）。敷地面積が不明の棟は、つまみを両端にした時（＝すべて）だけ数える。</small>
+<label><input type="checkbox" id="l_hol">借上・国都有地上など（建物か土地が区の単独所有でない）だけ</label>
+<div>ピンの色＝築年の区分（棟数・延床は施設データ集R6の198棟全体）：<div id="eralg"></div></div>
+<small>旧耐震＝〜1980年度（新耐震基準は1981年6月施行）。1981年度の5棟は「耐震診断」列で判定（診断を実施＝旧耐震、新耐震以降＝新耐震、「未」＝判定不能のため新耐震扱い）。2037年＝RC/SRCの法定耐用年数47年を基準（2037−47＝1990年度）。木造・鉄骨は耐用年数が異なる。</small>
+<div>ピンの縁：<span class="sw" style="background:#fff;border:2px solid #1f4fd8;box-sizing:border-box"></span>青＝建物か土地が区の単独所有でない　<span class="sw" style="background:#fff;border:2px dashed #222;box-sizing:border-box"></span>破線＝位置は名称照合（公園等の代表点・建物位置ではない）</div>
+<div id="miss" class="m"></div>
+
+<h2>再開発区域の多角形（描画・計量・保存）</h2>
+<button type="button" id="rd_b_draw">多角形を描く</button>
+<div id="rd_draw_ctl" style="display:none;margin:4px 0"><span id="rd_live" class="m"></span><br><button type="button" id="rd_b_fin">確定</button> <button type="button" id="rd_b_undo">1点戻す</button> <button type="button" id="rd_b_cancel">中止</button></div>
+<div id="rd_list"></div>
+<div id="rd_ctl" style="display:none;margin:4px 0"><input type="text" id="rd_name" placeholder="名前"><button type="button" id="rd_b_edit">頂点を編集</button> <button type="button" id="rd_b_del">削除</button><br><small>編集中：頂点をドラッグで移動／右クリックで削除／辺の中点（小さい点）をクリックで頂点を追加</small></div>
+<div id="rd_res" style="margin:4px 0"></div>
+<button type="button" id="rd_b_exp">GeoJSONで書き出す</button> <label style="display:inline">読み込み <input id="rd_file" type="file" accept=".geojson,.json" style="width:150px"></label>
+<small>描いた多角形はこのブラウザ（localStorage）に自動保存されます。別のPC・ブラウザへは書き出し→読み込み。ブラウザのサイトデータを消すと失われるので、書き出しで控えを取ってください。</small>
+<div id="info">地図をクリックすると、最寄り駅までの直線距離を表示します。</div>
+<h2>出典・限界</h2>
+<small>町丁目＝e-Stat 国勢調査2020小地域／駅・路線・区界＝国土数値情報 N02-23・N03-23／学校＝国土数値情報 P29-21（2021年度。公立／私立は校名による推定）／学区＝国土数値情報 A27-21・A32-21（令和3年度時点）／道路＝OpenStreetMap／施設＝目黒区 施設データ集R6（住所は固定資産台帳R7の所在地を名称で突合し、国土地理院住所検索で座標化。余り容積＝指定容積×敷地−延床の目安で、斜線・高度・日影等の制限は未反映）。借上建物10件は名称が伏せられているため未配置。</small>
+</div>
+<div id="dtwrap" style="display:none"><div id="dthead"><b>学区別の年少人口（小学校区＝5〜9歳／中学校区＝10〜14歳）</b> <button type="button" id="dt_x">閉じる</button></div><div id="dtbody"></div></div>
+<div id="map"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+/*DATA*/
+const G=u=>"https://cyberjapandata.gsi.go.jp/xyz/"+u, att='<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>';
+const BASES={
+ "淡色地図（国土地理院）":L.tileLayer(G("pale/{z}/{x}/{y}.png"),{maxZoom:18,attribution:att}),
+ "標準地図（国土地理院）":L.tileLayer(G("std/{z}/{x}/{y}.png"),{maxZoom:18,attribution:att}),
+ "航空写真（国土地理院）":L.tileLayer(G("seamlessphoto/{z}/{x}/{y}.jpg"),{maxZoom:18,attribution:att}),
+ "OpenStreetMap":L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}),
+ "白地図（背景なし）":L.tileLayer("data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==",{})
+};
+const OVS={
+ "（重ねる地図なし）":null,
+ "色別標高図":L.tileLayer(G("relief/{z}/{x}/{y}.png"),{maxZoom:15,attribution:att}),
+ "陰影起伏図":L.tileLayer(G("hillshademap/{z}/{x}/{y}.png"),{maxZoom:16,attribution:att}),
+ "洪水浸水想定（想定最大規模）":L.tileLayer("https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png",{maxZoom:17,attribution:"ハザードマップポータル"}),
+ "土砂災害警戒区域（土石流等）":L.tileLayer("https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png",{maxZoom:17,attribution:"ハザードマップポータル"})
+};
+const map=L.map("map",{preferCanvas:true,zoomSnap:.5}).setView([35.6335,139.6985],13.5);
+// 駅圏：10分・15分をそれぞれ1つの層（pane＋専用レンダラ）にまとめ、層ごとに透明度をかける（円の重なりで濃くならない）
+for(const [k,z,o] of [["w10",340,.16],["w5",345,.28]]){const pn=map.createPane(k);pn.style.zIndex=z;pn.style.opacity=o;}
+map.createPane("dist").style.zIndex=410;map.createPane("roads").style.zIndex=380;
+let base,ov;
+const bs=document.getElementById("base"),os=document.getElementById("ov");
+Object.keys(BASES).forEach(k=>bs.add(new Option(k)));Object.keys(OVS).forEach(k=>os.add(new Option(k)));
+function setBase(){if(base)map.removeLayer(base);base=BASES[bs.value];base.setOpacity(+bop.value).addTo(map).bringToBack();}
+function setOv(l){if(ov)map.removeLayer(ov);ov=l;if(ov){ov.setOpacity(+oop.value).addTo(map);}}
+bs.onchange=setBase;os.onchange=()=>setOv(OVS[os.value]);
+bop.oninput=()=>base.setOpacity(+bop.value);oop.oninput=()=>ov&&ov.setOpacity(+oop.value);
+turl.onkeydown=e=>{if(e.key==="Enter"&&turl.value.includes("{z}")){setOv(L.tileLayer(turl.value,{maxZoom:19}));os.value=os.options[0].value;}};
+gj.onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{L.geoJSON(JSON.parse(t),{style:{color:"#c0392b",weight:2,fillOpacity:.15},pointToLayer:(p,ll)=>L.circleMarker(ll,{radius:5,color:"#c0392b"}),onEachFeature:(ft,l)=>{const p=ft.properties||{};l.bindPopup(Object.entries(p).slice(0,12).map(([k,v])=>k+"："+v).join("<br>")||"(属性なし)")}}).addTo(map)}catch(x){alert("GeoJSONを読めません")}})};
+setBase();
+
+const T={}; // layers
+// 丁目
+T.cho=L.geoJSON(D.cho,{style:{color:"#5b7a73",weight:1,fillColor:"#7fb8a6",fillOpacity:.07},
+ onEachFeature:(f,l)=>l.on("click",e=>{info("<b>"+f.properties.name+"</b>");})});
+T.lab=L.layerGroup(D.cho.features.map(f=>L.marker([f.properties.label[1],f.properties.label[0]],{interactive:false,icon:L.divIcon({className:"cl",html:f.properties.name.replace(/^.*?(?=[一二三四五六七八九十]+丁目|$)/,m=>m)})})));
+T.ward=L.geoJSON(D.ward,{style:{color:"#1d4d43",weight:3,fill:false},interactive:false}).addTo(map);
+// 道路
+const RW={motorway:3.5,trunk:3,primary:3,secondary:2.5,tertiary:2};
+T.maj=L.geoJSON(D.roads.major,{pane:"roads",style:f=>({color:"#d9822b",weight:RW[f.properties.hw.replace("_link","")]||2,opacity:.85}),
+ onEachFeature:(f,l)=>f.properties.name&&l.bindTooltip(f.properties.name,{sticky:true})});
+T.min=L.geoJSON(D.roads.minor,{pane:"roads",style:{color:"#888",weight:1,opacity:.7}});
+// 鉄道・駅
+T.rail=L.geoJSON(D.rail,{pane:"roads",style:{color:"#444",weight:2.5,dashArray:"6 3"},onEachFeature:(f,l)=>l.bindTooltip(f.properties.line+"（"+f.properties.op+"）",{sticky:true})});
+T.st=L.layerGroup(D.stations.map(s=>L.circleMarker([s.lat,s.lon],{radius:s.in?5:3.5,color:"#111",weight:1.5,fillColor:s.in?"#fff":"#bbb",fillOpacity:1})
+ .bindTooltip(s.name,{permanent:map.getZoom()>=13,direction:"right",className:"lab"}).bindPopup("<b>"+s.name+"駅</b>"+(s.in?"":"（区外）")+"<br>"+s.lines.join("<br>"))));
+// 駅圏（直線距離の円・80m/分）
+const wc=(r,pane)=>{const rn=L.svg({pane});return L.layerGroup(D.stations.map(st=>L.circle([st.lat,st.lon],{radius:r,pane,renderer:rn,stroke:false,fillColor:"#1b9e77",fillOpacity:1,interactive:false})))};
+T.w10=wc(800,"w10");T.w5=wc(400,"w5");
+// 学区
+const dl=(k,c)=>L.geoJSON({type:"FeatureCollection",features:D.districts.features.filter(f=>f.properties.kind===k)},{pane:"dist",
+ style:{color:c,weight:k==="中"?3.5:3,opacity:.95,dashArray:k==="中"?"10 5":null,fillColor:c,fillOpacity:.06},
+ onEachFeature:(f,l)=>{const nw=f.properties.now&&f.properties.now!==f.properties.name?"→ 現行："+f.properties.now+"（R7.4統合）":"";l.bindTooltip(f.properties.name+"の学区（"+(k==="小"?"小学校区":"中学校区")+"・令和3年度）"+(nw?"<br>"+nw:""),{sticky:true});l.on("click",()=>info("<b>"+f.properties.name+"</b>の学区"+(f.properties.now&&f.properties.now!==f.properties.name?"（現行："+f.properties.now+"・R7.4統合）":"")+"<br>"+f.properties.setter+"　"+f.properties.addr+"<br><span class='m'>国土数値情報 A27-21／A32-21（令和3年度時点）</span>"))}});
+T.d_es=dl("小","#2166ac");T.d_js=dl("中","#b2182b");
+// 学校
+const sch=()=>{const g=L.layerGroup();D.schools.forEach(s=>{if(!l_pri.checked&&!s.public)return;const es=s.kind==="小学校";if(es?!l_es.checked:!l_js.checked)return;
+ g.addLayer(L.circleMarker([s.lat,s.lon],{radius:es?5:6,color:"#fff",weight:1,fillColor:es?"#2166ac":"#b2182b",fillOpacity:.95}).bindPopup("<b>"+s.name+"</b><br>"+s.kind+"・"+(s.public?"公立（推定）":"私立・都立ほか")+"<br>"+s.addr).bindTooltip(s.name,{sticky:true}))});return g};
+let SG;
+// 施設
+const ERA={old:["#9b1c1c","旧耐震（〜1980年度＋1981年度の判定分）"],r2037:["#e08a1e","新耐震・2037年に法定耐用年数47年（〜1990年度）"],new:["#14a38b","1991年度〜"],na:["#999","不明"]};
+const col=e=>(ERA[e]||ERA.na)[0];
+document.getElementById("eralg").innerHTML=Object.entries(ERA).map(([k,[c,l]])=>{const s=D.era_stats[k];return '<div><span class="sw" style="background:'+c+'"></span>'+l+'：'+s.n+'棟・延床'+s.floor_m2.toLocaleString()+'㎡'+(s.n_mapped<s.n?'（地図に配置'+s.n_mapped+'）':'')+'</div>'}).join("");
+// 築年度スライダー：旧耐震と判定した1981年度の棟は1980年度として扱う（旧耐震ボタン＝era=oldと一致させるため）
+const ykey=f=>f.built==null?null:(f.era==="old"&&f.built===1981?1980:f.built);
+const RG={lo:1929,hi:2022,min:1929,max:2022},pctY=y=>(y-RG.min)/(RG.max-RG.min)*100;
+const SZ={min:100,max:470,lo:100,hi:470};
+const sArea=v=>Math.pow(10,v/100);
+function sitePass(f){const full=SZ.lo<=SZ.min&&SZ.hi>=SZ.max;if(f.site_m2==null)return full;
+ if(SZ.lo>SZ.min&&f.site_m2<sArea(SZ.lo))return false;if(SZ.hi<SZ.max&&f.site_m2>=sArea(SZ.hi))return false;return true}
+function passF(f){const y=ykey(f);return y!=null&&y>=RG.lo&&y<=RG.hi&&sitePass(f)&&(!l_hol.checked||hold(f))}
+function sgUpdate(from){
+ let lo=+sg_lo.value,hi=+sg_hi.value;if(lo>hi){if(from==="lo")lo=hi;else hi=lo;sg_lo.value=lo;sg_hi.value=hi}
+ SZ.lo=lo;SZ.hi=hi;
+ const f0=v=>{const a=sArea(v);return a>=1000?Math.round(a/100)*100:a>=100?Math.round(a/10)*10:Math.round(a)};
+ const lt=lo<=SZ.min?"下限なし":f0(lo).toLocaleString()+"㎡以上",ht=hi>=SZ.max?"上限なし":f0(hi).toLocaleString()+"㎡未満";
+ sgtxt.innerHTML="<b>"+lt+"〜"+ht+"</b>";
+ rgUpdate();
+}
+function sgInit(){
+ const N=37,cnt=Array(N).fill(0);D.fac.forEach(f=>{if(f.site_m2!=null){const i=Math.min(N-1,Math.max(0,Math.floor((Math.log10(f.site_m2)*100-SZ.min)/10)));cnt[i]++}});
+ const mx=Math.max(...cnt);let h="";
+ for(let i=0;i<N;i++){const a0=sArea(SZ.min+i*10),c=a0<100?"#7f8c8d":a0<1000?"#2e86c1":"#1f4e79";h+='<i title="'+Math.round(a0).toLocaleString()+'㎡〜：'+cnt[i]+'棟" style="height:'+(cnt[i]?Math.max(3,cnt[i]/mx*44):0)+'px;background:'+c+'"></i>'}
+ shist.innerHTML=h;
+ const pct=v=>(v-SZ.min)/(SZ.max-SZ.min)*100;sgl1.style.left=pct(200)+"%";sgl2.style.left=pct(300)+"%";
+ sg_lo.oninput=()=>sgUpdate("lo");sg_hi.oninput=()=>sgUpdate("hi");
+ const set=(a,c)=>{sg_lo.value=a;sg_hi.value=c;sgUpdate()};
+ s_a.onclick=()=>set(100,200);s_b.onclick=()=>set(200,300);s_c.onclick=()=>set(300,470);s_all.onclick=()=>set(100,470);
+}
+function rgUpdate(from){
+ let lo=+rg_lo.value,hi=+rg_hi.value;if(lo>hi){if(from==="lo")lo=hi;else hi=lo;rg_lo.value=lo;rg_hi.value=hi}
+ RG.lo=lo;RG.hi=hi;
+ const inr=D.fac.filter(f=>passF(f));
+ const nm=inr.filter(f=>f.lon!=null).length,fl=inr.reduce((a,f)=>a+(f.floor_m2||0),0);
+ rgtxt.innerHTML="<b>"+lo+"〜"+hi+"年度</b>　表示中 <b>"+inr.length+"棟</b>・延床 <b>"+Math.round(fl).toLocaleString()+"㎡</b>（地図上のピン "+nm+"）";
+ sync();
+}
+function rgInit(){
+ const cnt={};D.fac.forEach(f=>{const y=ykey(f);if(y!=null)cnt[y]=(cnt[y]||0)+1});const mx=Math.max(...Object.values(cnt));
+ let h="";for(let y=RG.min;y<=RG.max;y++){const n=cnt[y]||0,c=y<=1980?"#9b1c1c":y<=1990?"#e08a1e":"#14a38b";h+='<i title="'+y+'年度：'+n+'棟" style="height:'+(n?Math.max(3,n/mx*44):0)+'px;background:'+c+'"></i>'}
+ hist.innerHTML=h;
+ rgl1.style.left=pctY(1980.5)+"%";rgl2.style.left=pctY(1990.5)+"%";
+ rg_lo.oninput=()=>rgUpdate("lo");rg_hi.oninput=()=>rgUpdate("hi");
+ const set=(a,b)=>{rg_lo.value=a;rg_hi.value=b;rgUpdate()};
+ b_old.onclick=()=>set(1929,1980);b_r37.onclick=()=>set(1929,1990);b_all.onclick=()=>set(1929,2022);
+}
+const yen=v=>v==null?"－":(v/1e8).toFixed(1)+"億円";
+const fmt=v=>v==null?"－":Math.round(v).toLocaleString();
+function hold(f){return f.owner!=="目黒区"||(f.owner_land&&!/^目黒区$/.test(f.owner_land.trim()))}
+const pin=(c,h,osm)=>L.divIcon({className:"",iconSize:[22,30],iconAnchor:[11,29],tooltipAnchor:[0,-24],
+ html:'<svg width="22" height="30" viewBox="0 0 22 30"><path d="M11 1C5.5 1 1.5 5 1.5 10.3 1.5 17.5 11 29 11 29s9.5-11.5 9.5-18.7C20.5 5 16.5 1 11 1z" fill="'+c+'" stroke="'+(h?"#1f4fd8":"#222")+'" stroke-width="'+(h?2.6:1.2)+'"'+(osm?' stroke-dasharray="3 2"':'')+'/><circle cx="11" cy="10.5" r="3.6" fill="#fff" fill-opacity=".9"/></svg>'});
+const fac=()=>{const g=L.layerGroup();D.fac.forEach(f=>{if(f.lon==null)return;if(!passF(f))return;
+ const h=hold(f);const room=(f.far&&f.site_m2&&f.floor_m2!=null)?f.far*f.site_m2-f.floor_m2:null;
+ const tip="<b>"+f.name+"</b><br>所管："+f.dept+"　"+f.kind+(f.parts&&f.parts!==f.name?"<br>構成施設："+f.parts:"")+"<br>構造："+(f.structure||"－")+"<br>築年度："+(f.built||"－")+(f.built?"（2026年時点で築"+(2026-f.built)+"年・2037年時点で築"+(2037-f.built)+"年）":"")+"<br>区分："+(ERA[f.era]||ERA.na)[1]+(f.era_note?"<br><span class='m'>"+f.era_note+"</span>":"")+"<br>延床："+fmt(f.floor_m2)+"㎡　敷地："+fmt(f.site_m2)+"㎡<br>所有：建物＝"+f.owner+"／土地＝"+(f.owner_land||"－")+"<br>用途地域："+(f.zone||"－")+"　容積率："+(f.far?Math.round(f.far*100)+"%":"－")+"<br>所在地："+(f.address||"（台帳と照合できず）")+(f.precision==="osm"?"<br><span class='m'>位置は名称照合（代表点）</span>":"");
+ const more="<br>余り容積の目安："+(room==null?"－":fmt(room)+"㎡")+"　減価償却率："+(f.depr==null?"－":Math.round(f.depr*100)+"%")+"<br>台帳簿価："+yen(f.book_value_yen);
+ g.addLayer(L.marker([f.lat,f.lon],{icon:pin(col(f.era),h,f.precision==="osm"),riseOnHover:true}).bindTooltip(tip,{direction:"top"}).bindPopup(tip+more))});return g};
+let FG;
+const miss=D.fac.filter(f=>f.lon==null);
+document.getElementById("miss").innerHTML="<b>未配置 "+miss.length+"件</b>（"+D.fac.length+"棟中）："+miss.filter(f=>f.name!=="借上建物").map(f=>f.name).join("、")+(miss.some(f=>f.name==="借上建物")?"、借上建物×"+miss.filter(f=>f.name==="借上建物").length+"（名称伏せ）":"");
+
+// 人口レイヤ（町丁目の塗り分け）。表示＝人数／密度（人/ha）／2020年比
+const AGEL={total:"総数",u15:"0〜14歳",a1564:"15〜64歳",a65:"65歳以上",a75:"75歳以上"};
+const popv=(k,y,sc,a)=>{const t=D.pop.towns[k];return y==="2020"?t["2020"][a]:t[sc][y][a]};
+const HA={};D.cho.features.forEach(f=>HA[f.properties.key]=f.properties.ha);
+const BR=["#f1f7f5","#cfe6df","#9fd0c2","#62b3a1","#2f8f7d","#14624f"];
+const CHB=[-50,-30,-10,10,30,50],CHC=["#8c2d04","#d94801","#fdae6b","#f7f7f7","#9ecae1","#4292c6","#08519c"];
+const metric=(k,y,sc,a,m)=>{const v=popv(k,y,sc,a);if(m==="dens")return HA[k]?v/HA[k]:0;if(m==="ch"){const v0=D.pop.towns[k]["2020"][a];return v0?(v/v0-1)*100:0}return v};
+const RANGE={};
+function popStep(a,m){const key=a+m;if(RANGE[key])return RANGE[key];let mx=0;for(const k in D.pop.towns){for(const sc of["low","mid","high"])for(const y of["2050","2100"])mx=Math.max(mx,metric(k,y,sc,a,m));mx=Math.max(mx,metric(k,"2020","mid",a,m))}
+ const raw=mx/6,p10=Math.pow(10,Math.floor(Math.log10(raw))),st=[1,2,2.5,5,10].map(x=>x*p10).find(x=>x>=raw);return RANGE[key]=st}
+const chIdx=v=>{let i=0;while(i<CHB.length&&v>=CHB[i])i++;return i};
+let POPL;
+function popStyle(f){const k=f.properties.key;if(!D.pop.towns[k])return{fillOpacity:0,weight:.5,color:"#5b7a73"};
+ const m=p_m.value,v=metric(k,p_y.value,p_s.value,p_a.value,m);
+ const c=m==="ch"?CHC[chIdx(v)]:BR[Math.min(5,Math.floor(v/popStep(p_a.value,m)))];return{fillColor:c,fillOpacity:.72,weight:.8,color:"#46665e"}}
+function popTip(f){const k=f.properties.key;if(!D.pop.towns[k])return f.properties.name;const y=p_y.value,sc=p_s.value,a=p_a.value;
+ const v=popv(k,y,sc,a),v0=D.pop.towns[k]["2020"][a],ch=v0?(v/v0-1)*100:0,ha=HA[k];
+ return"<b>"+f.properties.name+"</b>（"+(ha?ha.toFixed(1):"－")+"ha）<br>"+AGEL[a]+"："+Math.round(v).toLocaleString()+"人（"+y+"年"+(y==="2020"?"・実績":"・"+D.pop.scenarios[sc].split("＝")[0]+"シナリオ")+"）<br>密度："+(ha?(v/ha).toFixed(1):"－")+"人/ha<br>2020年から："+(y==="2020"?"－":(ch>=0?"+":"")+ch.toFixed(1)+"%")+"（2020年 "+Math.round(v0).toLocaleString()+"人）"}
+function popRender(){
+ if(POPL){map.removeLayer(POPL);POPL=null}
+ const m=p_m.value,a=p_a.value;let h;
+ if(m==="ch"){h="<div class='m'>"+AGEL[a]+"・2020年比（%）</div>"+CHC.map((c,i)=>'<div><span class="sw" style="background:'+c+';border:1px solid #ccc"></span>'+(i===0?CHB[0]+"%未満":i===CHC.length-1?"+"+CHB[i-1]+"%以上":(CHB[i-1]>0?"+":"")+CHB[i-1]+"〜"+(CHB[i]>0?"+":"")+CHB[i]+"%")+"</div>").join("")+(p_y.value==="2020"?"<div class='m'>2020年は基準年のため全て±0%</div>":a!=="total"?"<div class='m'><b>年齢層を1つ選ぶと全町丁目が同じ増減率になる</b>（全町丁目に同じ伸び率を当てているため）。町丁目ごとの差は「総数」で見る（2020年の年齢構成の違いだけから生じる）</div>":"<div class='m'>町丁目ごとの差は2020年の年齢構成の違いだけから生じる</div>")}
+ else{const st=popStep(a,m),u=m==="dens"?"人/ha":"人/町丁目",f=x=>m==="dens"?(+x.toFixed(1)).toLocaleString():x.toLocaleString();
+  h="<div class='m'>"+AGEL[a]+"（"+u+"）</div>"+BR.map((c,i)=>'<div><span class="sw" style="background:'+c+'"></span>'+f(i*st)+(i<5?"〜"+f((i+1)*st):"以上")+"</div>").join("")+"<div class='m'>凡例は2020・2050・2100・3シナリオで共通</div>"}
+ poplg.innerHTML=h;
+ if(!l_pop.checked)return;
+ POPL=L.geoJSON(D.cho,{pane:"popp",style:popStyle,onEachFeature:(f,l)=>{l.bindTooltip(()=>popTip(f),{sticky:true});l.on("click",()=>info(popTip(f)))}}).addTo(map);
+}
+map.createPane("popp").style.zIndex=350;  // 駅圏の円（340/345）より上、学区（410）より下
+[l_pop,p_y,p_s,p_a,p_m].forEach(e=>e.onchange=popRender);popRender();
+// 学区別の年少人口の表
+function dtRender(){
+ const R=D.dtable.rows,f=n=>n.toLocaleString();
+ const tbl=kind=>{const rs=R.filter(r=>r.kind===kind);const age=kind==="小"?"5〜9歳":"10〜14歳";
+  let h="<table><tr><th rowspan=2>"+(kind==="小"?"小学校区":"中学校区（令和3年度）")+"</th><th rowspan=2>町丁目</th><th rowspan=2>2020<br>"+age+"</th><th colspan=3>2050年</th><th colspan=3>2100年（シナリオ）</th></tr><tr><th>低位</th><th>中位</th><th>高位</th><th>低位</th><th>中位</th><th>高位</th></tr>";
+  rs.forEach(r=>{h+="<tr><td>"+r.name+(r.now&&r.now!==r.name?"<span class='m'>→"+r.now+"</span>":"")+"</td><td>"+r.towns+"</td><td>"+f(r.v2020)+"</td>"+["low_2050","mid_2050","high_2050","low_2100","mid_2100","high_2100"].map(k=>"<td>"+f(r[k])+"</td>").join("")+"</tr>"});
+  const sm=k=>f(rs.reduce((a,r)=>a+r[k],0));h+="<tr><th>計</th><th></th><th>"+sm("v2020")+"</th>"+["low_2050","mid_2050","high_2050","low_2100","mid_2100","high_2100"].map(k=>"<th>"+sm(k)+"</th>").join("")+"</tr></table>";return h};
+ dtbody.innerHTML=tbl("小")+tbl("中")+"<div class='m'>町丁目の中心点がどの学区に入るかで割り当て（町丁目の区域が学区の境界をまたぐ場合も全量を中心点の学区に入れる）。境界をまたぐ可能性のある町丁目：小学校区 "+D.dtable.cross["小"].length+"件・中学校区 "+D.dtable.cross["中"].length+"件（"+D.dtable.cross["中"].slice(0,8).join("、")+"…）。割り当てできなかった町丁目：なし。低位＝社人研、中位＝区推計・国調基本、高位＝区推計・国調高位。中学校区は令和3年度の9区域（令和7年4月に第七＋第九→目黒南、第八＋第十一→目黒西）。2100年は予測ではなくシナリオ。町丁目ごとの違いは反映されない。</div>"}
+b_dt.onclick=()=>{dtRender();dtwrap.style.display="block"};dt_x.onclick=()=>dtwrap.style.display="none";
+
+// 最寄り駅の領域（ボロノイ分割）。計算＝src/06_voronoi.py
+const VC=["#a6cee3","#fdbf6f","#b2df8a","#fb9a99","#cab2d6","#ffff99"];
+map.createPane("vorp").style.zIndex=325;map.getPane("vorp").style.opacity=.55;
+let VL=null,VLB=null;
+const VR={};D.vor.rows.forEach(r=>VR[r.name]=r);
+const vnm=r=>r.members.length>1?r.name+"（＋"+r.members.slice(1).join("・")+"）":r.name;
+const vtip=n=>{const r=VR[n],g=D.vor.gap;return"<b>"+vnm(r)+"の領域</b>"+(r.in_ward?"":"（区外の駅）")+"<br>面積 "+r.area_ha+"ha／2020年 "+r.pop["2020"].toLocaleString()+"人（密度 "+r.dens2020+"人/ha）<br>2050年（中位）"+r.pop.mid2050.toLocaleString()+"人（"+((r.pop.mid2050/r.pop["2020"]-1)*100).toFixed(1)+"%）<br>区の施設 "+r.fac_n+"件（うち旧耐震 "+r.fac_old+"件）<br>領域内で駅から最も遠い地点 "+r.far_m+"m"};
+function vorRender(){
+ if(VL){map.removeLayer(VL);VL=null}if(VLB){map.removeLayer(VLB);VLB=null}
+ if(!l_vor.checked)return;
+ VL=L.geoJSON(D.vor.cells,{pane:"vorp",style:f=>({fillColor:VC[f.properties.color%VC.length],fillOpacity:1,weight:1.5,color:"#555",dashArray:"4 3"}),
+  onEachFeature:(f,l)=>{l.bindTooltip(()=>vtip(f.properties.name),{sticky:true});l.on("click",()=>info(vtip(f.properties.name)))}}).addTo(map);
+ const cen={};D.vor.cells.features.forEach(f=>{const v=[].concat(...f.geometry.coordinates.map(p=>p[0]));cen[f.properties.name]=[v.reduce((a,c)=>a+c[1],0)/v.length,v.reduce((a,c)=>a+c[0],0)/v.length]});
+ VLB=L.layerGroup(D.vor.rows.map(r=>L.marker(r.in_ward?[r.lat,r.lon]:cen[r.name],{interactive:false,pane:"vorp",icon:L.divIcon({className:"",html:'<div style="font-size:11px;font-weight:700;color:#222;text-shadow:0 0 3px #fff,0 0 3px #fff;white-space:nowrap;transform:translate(-50%,'+(r.in_ward?'-130%':'-50%')+')">'+vnm(r)+(r.in_ward?"":"（区外の駅）")+'</div>',iconSize:[0,0]})}))).addTo(map);
+}
+(function(){const g=D.vor.gap,c=D.vor.check;vornote.innerHTML="各地点を直線距離で最も近い駅に割り当てた領域（区界で切って表示）。駅＝区界から"+(c.buffer_m/1000)+"km以内の"+c.n_stations+"駅（同名の駅は1点・重みなし）。統合＝池ノ上・東北沢・代々木上原→駒場東大前、代官山→中目黒、九品仏→自由が丘、白金台→恵比寿、石川台→緑が丘、北千束→洗足（領域の和集合）。人口は町丁目の面積按分。<br>駅圏から外れる地域（25m格子の概算）：5分圏（400m）の外＝面積"+(g.over400_area_share*100).toFixed(1)+"%・人口"+(g.over400_pop_share*100).toFixed(1)+"%、10分圏（800m）の外＝面積"+(g.over800_area_share*100).toFixed(1)+"%・人口"+(g.over800_pop_share*100).toFixed(1)+"%。"})();
+function vtRender(){
+ const R=D.vor.rows,f=n=>n.toLocaleString(),g=D.vor.gap;
+ let h="<table><tr><th>最寄り駅</th><th>面積<br>(ha)</th><th>2020年<br>人口</th><th>密度<br>(人/ha)</th><th>0〜14歳<br>2020</th><th>65歳以上<br>2020</th><th>2050年<br>低位</th><th>2050年<br>中位</th><th>2050年<br>高位</th><th>施設<br>(件)</th><th>旧耐震<br>(件)</th><th>最遠<br>(m)</th></tr>";
+ R.forEach(r=>{h+="<tr><td>"+vnm(r)+(r.in_ward?"":"<span class='m'>（区外）</span>")+"</td><td>"+r.area_ha+"</td><td>"+f(r.pop["2020"])+"</td><td>"+r.dens2020+"</td><td>"+f(r.u15_2020)+"</td><td>"+f(r.a65_2020)+"</td><td>"+f(r.pop.low2050)+"</td><td>"+f(r.pop.mid2050)+"</td><td>"+f(r.pop.high2050)+"</td><td>"+r.fac_n+"</td><td>"+r.fac_old+"</td><td>"+r.far_m+"</td></tr>"});
+ const sm=k=>f(R.reduce((a,r)=>a+k(r),0));
+ h+="<tr><th>計</th><th>"+(R.reduce((a,r)=>a+r.area_ha,0)).toFixed(1)+"</th><th>"+sm(r=>r.pop["2020"])+"</th><th></th><th>"+sm(r=>r.u15_2020)+"</th><th>"+sm(r=>r.a65_2020)+"</th><th>"+sm(r=>r.pop.low2050)+"</th><th>"+sm(r=>r.pop.mid2050)+"</th><th>"+sm(r=>r.pop.high2050)+"</th><th>"+sm(r=>r.fac_n)+"</th><th>"+sm(r=>r.fac_old)+"</th><th></th></tr></table>";
+ h+="<div class='m'>面積の大きい順。領域＝区界を駅の組ごとの垂直二等分線で切って作成（検算：面積の合計が区界と一致、無作為の"+D.vor.check.random_points.toLocaleString()+"点がすべて最寄り駅の領域に入る）。人口＝町丁目ポリゴンと領域の重なり面積による按分（町丁目内の人口は一様と仮定）。施設＝座標のある"+sm(r=>r.fac_n)+"件を最寄り駅に割り当て（旧耐震は築年度1980年度以前＋1981年度の耐震診断判定）。最遠＝領域内で駅から最も遠い地点までの直線距離（25m格子）。<br><b>駅圏から外れる地域</b>：5分圏（400m）の外＝面積 "+g.over400_ha.toLocaleString()+"ha（"+(g.over400_area_share*100).toFixed(1)+"%）・人口 約"+g.over400_pop.toLocaleString()+"人（"+(g.over400_pop_share*100).toFixed(1)+"%）／10分圏（800m）の外＝面積 "+g.over800_ha.toLocaleString()+"ha（"+(g.over800_area_share*100).toFixed(1)+"%）・人口 約"+g.over800_pop.toLocaleString()+"人（"+(g.over800_pop_share*100).toFixed(1)+"%）。直線距離のため、道路・鉄道・河川による回り道は反映されない。2050年の低位＝社人研、中位＝区推計・国調基本、高位＝区推計・国調高位。</div>";
+ dtbody.innerHTML=h;dthead.querySelector("b").textContent="最寄り駅（直線距離）ごとの領域の人口・施設";dtwrap.style.display="block"}
+
+const map2={l_cho:"cho",l_lab:"lab",l_maj:"maj",l_min:"min",l_rail:"rail",l_st:"st",l_w5:"w5",l_w10:"w10",l_d_es:"d_es",l_d_js:"d_js"};
+function sync(){
+ for(const [id,k] of Object.entries(map2)){const on=document.getElementById(id).checked;on?T[k].addTo(map):map.removeLayer(T[k]);}
+ if(FG)map.removeLayer(FG);FG=l_fac.checked?fac().addTo(map):null;
+ if(SG)map.removeLayer(SG);SG=sch().addTo(map);
+}
+document.querySelectorAll("#side input[type=checkbox]").forEach(c=>c.onchange=sync);
+l_hol.onchange=()=>rgUpdate();
+l_pop.onchange=popRender;  // 上の一括設定（sync）で上書きされるため付け直す
+l_vor.onchange=vorRender;b_vt.onclick=vtRender;b_dt.onclick=()=>{dthead.querySelector("b").textContent="学区別の年少人口（小学校区＝5〜9歳／中学校区＝10〜14歳）";dtRender();dtwrap.style.display="block"};
+rgInit();sgInit();sgUpdate();
+function info(h){document.getElementById("info").innerHTML=h}
+map.on("click",e=>{if(typeof RD!=="undefined"&&RD.drawing)return;let b=null,bd=1e9;D.stations.forEach(s=>{const d=map.distance(e.latlng,[s.lat,s.lon]);if(d<bd){bd=d;b=s}});
+ if(b)info("クリック地点→最寄り駅 <b>"+b.name+"</b> 直線 "+Math.round(bd)+"m（徒歩約"+Math.ceil(bd/80)+"分の目安）")});
+/*REDEV*/
+</script></body></html>
